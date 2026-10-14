@@ -219,12 +219,12 @@
 		background:
 			radial-gradient(
 				ellipse 80% 60% at 50% 0%,
-				color-mix(in oklch, var(--color-primary) 18%, transparent),
+				color-mix(in oklch, var(--color-primary) 20%, transparent),
 				transparent 70%
 			),
 			radial-gradient(
 				ellipse 70% 50% at 80% 100%,
-				color-mix(in oklch, var(--color-secondary) 12%, transparent),
+				color-mix(in oklch, var(--color-secondary) 13%, transparent),
 				transparent 65%
 			),
 			var(--color-base-200);
