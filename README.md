@@ -2,12 +2,12 @@
 
 A single-page retirement countdown for **David Mangicaro**, hosted at [notdavesproblem.party](https://notdavesproblem.party).
 
-The hero shows remaining time until the **Retirement Instant** (start of January 1, 2027, America/New_York), rotating through countdown views and Fun Measures with fade transitions. **Number Facts** come from the [Numbers API](http://numbersapi.com/) (trivia), proxied by a Cloudflare Worker over HTTPS and cached in `localStorage` ([ADR 0006](./docs/adr/0006-numbers-api-worker-proxy.md)). After the Retirement Instant, the site switches to a celebratory retired state.
+The hero shows remaining time until the **Retirement Instant** (start of January 1, 2027, America/New_York), rotating through countdown views and Fun Measures with fade transitions. **Number Facts** are short retirement jokes: the Worker fetches a random [Useless Fact](https://uselessfacts.jsph.pl/), Workers AI rewrites it with the on-screen number, and the browser caches successes in `localStorage` ([ADR 0007](./docs/adr/0007-useless-facts-ai-rewrite.md)). After the Retirement Instant, the site switches to a celebratory retired state.
 
 ## Stack
 
 - [SvelteKit](https://svelte.dev/docs/kit) with `@sveltejs/adapter-static`
-- Cloudflare Worker: static `build/` assets + `/api/fact` (Numbers API HTTP proxy)
+- Cloudflare Worker: static `build/` assets + `/api/fact` (Useless Facts + Workers AI)
 - [Tailwind CSS](https://tailwindcss.com/) + [DaisyUI](https://daisyui.com/) **sunset** theme
 
 ## Domain language
@@ -39,14 +39,15 @@ npm run preview
 
 Deploys use **Cloudflare Workers Builds ↔ GitHub**. See [ADR 0004](./docs/adr/0004-cloudflare-pages-github.md) and `wrangler.jsonc`.
 
-### How Number Facts work (no Workers AI)
+### How Number Facts work
 
 1. Browser (HTTPS site) calls same-origin **`/api/fact?n=42`**.
-2. Worker fetches **`http://numbersapi.com/42/trivia?json`** (HTTP is fine from the Worker).
-3. Worker returns `{ fact, tone: "normal" }` over HTTPS.
-4. Successful facts are stored in **`localStorage`** so repeat views don’t hit the API.
+2. Worker fetches a random fact from **`https://uselessfacts.jsph.pl/api/v2/facts/random?language=en`** (free, no API key).
+3. Worker asks **Workers AI** to rewrite that trivia into one short retirement joke that includes `42`.
+4. Worker returns `{ fact, tone: "normal" }` over HTTPS (or `fact: null` if either step fails).
+5. Successful jokes are stored in **`localStorage`** forever keyed by `n` so repeat views don’t burn Neurons.
 
-No AI enable step. No Neurons. Stay on **Workers Free**.
+Uses Workers Free AI Neurons (about 10,000/day). No Useless Facts API key.
 
 ### Build settings
 
@@ -63,13 +64,13 @@ On **Workers & Pages** → **`notdavesproblem`** → **Settings** → **Build**:
 | --- | --- |
 | `NODE_VERSION` | `22` |
 
-Do **not** use `wrangler types --check` in the build command. `wrangler.jsonc` must name the Worker `notdavesproblem` and must **not** require an `AI` binding for facts.
+Do **not** use `wrangler types --check` in the build command. `wrangler.jsonc` must name the Worker `notdavesproblem` and include the **`AI`** binding (`"ai": { "binding": "AI" }`).
 
 ### Verify
 
-1. Push `main` and wait for a green deploy.
-2. Open the site in a browser — facts should appear under the countdown when Numbers API has trivia for that integer.
-3. `curl "https://YOUR_HOST/api/fact?n=42"` should return **403** (same-origin gating). DevTools on the site should show **200** for `/api/fact`.
+1. Push `main` and wait for a green deploy (Worker must show an **AI** binding).
+2. Open the site in a browser — retirement jokes should appear under the countdown after the first successful `/api/fact` for that integer.
+3. `curl "https://YOUR_HOST/api/fact?n=42"` should return **403** (same-origin gating). DevTools on the site should show **200** for `/api/fact` with a non-null `fact` when AI + Useless Facts succeed.
 
 ### Branches
 

@@ -34,7 +34,7 @@ The whole integer used for Number Facts and fact caching for the current Countdo
 _Avoid_: display value, headline count
 
 **Number Fact**:
-A short trivia statement about the Primary Number (or Fun Measure headline value) of the current Countdown View, sourced from the Numbers API via the site’s Worker proxy.
+A short retirement joke for the Primary Number (or Fun Measure headline value) of the current Countdown View: the Worker pulls a random Useless Fact, then Workers AI rewrites it to weave in that number.
 _Avoid_: trivia blurb, fun fact, API text
 
 **Retired State**:

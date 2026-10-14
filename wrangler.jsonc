@@ -3,6 +3,9 @@
 	"name": "notdavesproblem",
 	"compatibility_date": "2026-10-14",
 	"main": "worker/index.ts",
+	"ai": {
+		"binding": "AI"
+	},
 	"assets": {
 		"directory": "./build",
 		"binding": "ASSETS",
