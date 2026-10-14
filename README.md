@@ -27,42 +27,35 @@ npm run build
 npm run preview
 ```
 
-## Deploy (Cloudflare Pages)
+## Deploy (Cloudflare Workers Builds)
 
-Deploys use **Cloudflare Pages ↔ GitHub** (not GitHub Actions). See [ADR 0004](./docs/adr/0004-cloudflare-pages-github.md).
+Deploys use **Cloudflare Workers Builds ↔ GitHub** with static assets (not GitHub Actions). See [ADR 0004](./docs/adr/0004-cloudflare-pages-github.md) and `wrangler.jsonc`.
 
-### Create / connect the project
-
-1. In the [Cloudflare dashboard](https://dash.cloudflare.com/) go to **Workers & Pages** → **Create** → **Pages** → **Connect to Git**.
-2. Authorize GitHub and select **`brandonluttrell/NotDavesProblem`**.
-3. Use these build settings:
+### Dashboard build settings
 
 | Setting | Value |
 | --- | --- |
 | Production branch | `main` |
-| Framework preset | None (or SvelteKit if offered — then override output dir) |
-| Build command | `npm run build` |
-| Build output directory | `build` |
-| Root directory | `/` (repo root) |
-
-4. Under **Environment variables** (Production and Preview), set:
+| Build command | `npx vite build` |
+| Deploy command | `npx wrangler deploy` |
+| Root directory | `/` |
 
 | Variable | Value |
 | --- | --- |
 | `NODE_VERSION` | `22` |
 
-5. Save and deploy. Confirm the first production build succeeds.
+`wrangler.jsonc` names the Worker `notdavesproblem` and publishes `./build` as assets (from `adapter-static`).
 
 ### Branches
 
 - **Production:** pushes / merges to `main` update the live site.
-- **Previews:** pull requests get Cloudflare preview URLs (enable preview deployments / preview branches in **Settings → Builds → Branch control** if not on by default).
+- **Previews:** non-`main` branches / PRs get preview uploads via Workers Builds.
 
 ### Custom domain: notdavesproblem.party
 
-1. In the Pages project go to **Custom domains** → **Set up a domain**.
+1. In the Worker/Pages project go to **Custom domains** → **Set up a domain**.
 2. Add **`notdavesproblem.party`** (and `www` if you want it) and follow Cloudflare’s activation steps.
-3. Keep DNS for that hostname on Cloudflare (proxied) so the Pages custom domain can complete. If the zone is already on Cloudflare, accept the record Cloudflare proposes; if DNS is elsewhere, point the domain at Cloudflare first or add the CNAME Cloudflare shows.
+3. Keep DNS for that hostname on Cloudflare (proxied).
 
 After activation, https://notdavesproblem.party should serve the latest `main` deploy.
 

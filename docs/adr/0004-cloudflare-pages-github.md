@@ -1,3 +1,3 @@
-# Deploy via Cloudflare Pages GitHub integration
+# Deploy via Cloudflare Workers Builds (static assets)
 
-Production deploys come from Cloudflare Pages connected to the GitHub repo, not from a GitHub Actions deploy workflow. Cloudflare runs `npm run build` and publishes the static `build/` output on pushes to `main`. Pull requests get Cloudflare preview deployments. The production hostname is **notdavesproblem.party** (Cloudflare custom domain on the Pages project). GitHub Actions was rejected to keep the pipeline simpler for a static site.
+Production deploys come from Cloudflare Workers Builds connected to the GitHub repo, not from a GitHub Actions deploy workflow. Cloudflare runs `npx vite build` (writes `build/` via `adapter-static`), then `npx wrangler deploy` using `wrangler.jsonc` assets from `./build`. Pull requests get preview deployments. The production hostname is **notdavesproblem.party**. GitHub Actions was rejected to keep the pipeline simpler for a static site.
