@@ -34,11 +34,15 @@ _Avoid_: easter egg, joke unit, novelty metric
 
 
 **Primary Number**:
-The whole integer used for Number Facts and fact caching for the current Countdown View. For Full Clock and Days it is remaining whole days; for other real totals it is that total; for Fun Measures it is the floored/rounded whole value of the headline number.
+The whole integer used for Number Facts for the current Countdown View. For Full Clock and Days it is remaining whole days; for other real totals it is that total; for Fun Measures it is the floored/rounded whole value of the headline number.
 _Avoid_: display value, headline count
 
+**Countdown Unit**:
+The unit that accompanies the Primary Number when asking for a Number Fact. For Full Clock it is days (matching the Primary Number). For Days, Hours, Minutes, Seconds, and Weeks it is that calendar unit. For Fun Measures it is a fixed short gag unit phrase per measure (for example Martian days, meetings), not derived from the sentence or the measure id. A Number Fact is identified by Primary Number plus Countdown Unit.
+_Avoid_: unit label, time unit, measure name, until retirement
+
 **Number Fact**:
-A short retirement joke for the Primary Number (or Fun Measure headline value) of the current Countdown View: the Worker pulls a random Useless Fact, then Workers AI rewrites it to weave in that number.
+A short retirement joke for the Primary Number of the current Countdown View: the Worker pulls a random Useless Fact, then Workers AI rewrites it to weave in both that number and its Countdown Unit. The joke text must include the Primary Number digits and the Countdown Unit wording (unit match is case-insensitive).
 _Avoid_: trivia blurb, fun fact, API text
 
 **Retired State**:

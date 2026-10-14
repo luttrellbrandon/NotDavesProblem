@@ -11,15 +11,19 @@ export function toFactInteger(value: number): number {
 }
 
 /**
- * Load a Number Fact for n: localStorage first, then same-origin /api/fact.
+ * Load a Number Fact for n + Countdown Unit: localStorage first, then same-origin /api/fact.
  * Successful facts are cached forever. Nulls are not cached so a later view can retry.
  */
-export async function loadNumberFact(n: number): Promise<NumberFactResult> {
-	const cached = readFactCache(n);
+export async function loadNumberFact(n: number, unit: string): Promise<NumberFactResult> {
+	const cached = readFactCache(n, unit);
 	if (cached?.fact) return cached;
 
 	try {
-		const res = await fetch(`/api/fact?n=${encodeURIComponent(String(n))}`, {
+		const params = new URLSearchParams({
+			n: String(n),
+			unit
+		});
+		const res = await fetch(`/api/fact?${params}`, {
 			method: 'GET',
 			credentials: 'same-origin',
 			headers: { Accept: 'application/json' }
@@ -32,7 +36,7 @@ export async function loadNumberFact(n: number): Promise<NumberFactResult> {
 			fact: typeof data.fact === 'string' ? data.fact : null,
 			tone: 'normal'
 		};
-		if (entry.fact) writeFactCache(n, entry);
+		if (entry.fact) writeFactCache(n, unit, entry);
 		return entry;
 	} catch {
 		return { fact: null, tone: 'normal' };

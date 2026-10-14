@@ -4,6 +4,7 @@
 	import { MediaQuery } from 'svelte/reactivity';
 	import {
 		HERO_VIEWS,
+		getCountdownUnit,
 		getPrimaryNumber,
 		getRemaining,
 		getViewLabel,
@@ -80,11 +81,12 @@
 		return () => clearInterval(id);
 	});
 
-	// Snapshot Primary Number when Countdown View changes (not every clock tick).
+	// Snapshot Primary Number + Countdown Unit when Countdown View changes (not every clock tick).
 	$effect(() => {
 		if (isRetired) return;
 
 		const view = currentView;
+		const unit = getCountdownUnit(view);
 		const n = untrack(() => {
 			if (isFunMeasureId(view)) {
 				return getFunMeasure(view, remaining, nowMs, RETIREMENT_INSTANT_MS).factInteger;
@@ -92,13 +94,13 @@
 			return getPrimaryNumber(view as CountdownViewId, remaining);
 		});
 
-		numberFactPromise = loadNumberFact(n);
+		numberFactPromise = loadNumberFact(n, unit);
 	});
 </script>
 
 {#if showHeaderClock}
 	<p
-		class="header-clock fixed top-3 left-3 z-10 text-xs tabular-nums text-base-content/45 sm:top-4 sm:left-4 sm:text-sm"
+		class="header-clock fixed top-3 left-3 z-10 text-sm tabular-nums text-primary sm:top-4 sm:left-4 sm:text-base"
 		aria-label={headerClockAriaLabel}
 	>
 		{headerClockText}
@@ -219,12 +221,12 @@
 		background:
 			radial-gradient(
 				ellipse 80% 60% at 50% 0%,
-				color-mix(in oklch, var(--color-primary) 20%, transparent),
+				color-mix(in oklch, var(--color-primary) 32%, transparent),
 				transparent 70%
 			),
 			radial-gradient(
 				ellipse 70% 50% at 80% 100%,
-				color-mix(in oklch, var(--color-secondary) 13%, transparent),
+				color-mix(in oklch, var(--color-secondary) 22%, transparent),
 				transparent 65%
 			),
 			var(--color-base-200);

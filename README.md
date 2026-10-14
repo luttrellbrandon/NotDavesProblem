@@ -41,11 +41,11 @@ Deploys use **Cloudflare Workers Builds ↔ GitHub**. See [ADR 0004](./docs/adr/
 
 ### How Number Facts work
 
-1. Browser (HTTPS site) calls same-origin **`/api/fact?n=42`**.
+1. Browser (HTTPS site) calls same-origin **`/api/fact?n=42&unit=hours`** (Primary Number + Countdown Unit).
 2. Worker fetches a random fact from **`https://uselessfacts.jsph.pl/api/v2/facts/random?language=en`** (free, no API key).
-3. Worker asks **Workers AI** to rewrite that trivia into one short retirement joke that includes `42`.
+3. Worker asks **Workers AI** to rewrite that trivia into one short retirement joke that includes `42` and the unit wording (e.g. `hours`).
 4. Worker returns `{ fact, tone: "normal" }` over HTTPS (or `fact: null` if either step fails).
-5. Successful jokes are stored in **`localStorage`** forever keyed by `n` so repeat views don’t burn Neurons.
+5. Successful jokes are stored in **`localStorage`** forever keyed by `n` + unit so repeat views don’t burn Neurons.
 
 Uses Workers Free AI Neurons (about 10,000/day). No Useless Facts API key.
 
@@ -70,7 +70,7 @@ Do **not** use `wrangler types --check` in the build command. `wrangler.jsonc` m
 
 1. Push `main` and wait for a green deploy (Worker must show an **AI** binding).
 2. Open the site in a browser — retirement jokes should appear under the countdown after the first successful `/api/fact` for that integer.
-3. `curl "https://YOUR_HOST/api/fact?n=42"` should return **403** (same-origin gating). DevTools on the site should show **200** for `/api/fact` with a non-null `fact` when AI + Useless Facts succeed.
+3. `curl "https://YOUR_HOST/api/fact?n=42&unit=hours"` should return **403** (same-origin gating). DevTools on the site should show **200** for `/api/fact` with a non-null `fact` when AI + Useless Facts succeed.
 
 ### Branches
 

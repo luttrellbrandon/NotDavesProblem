@@ -1,0 +1,3 @@
+# Countdown Unit for Full Clock and Fun Measures
+
+Full Clock’s on-screen label is “until retirement,” but its Primary Number is remaining whole days, so its Countdown Unit for Number Facts is `days`. Fun Measures do not use that Full Clock label or their full gag sentence as the unit; each sends a short gag unit phrase (for example Martian days, meetings). Rejected alternatives were a generic `units` for Fun Measures, or sending the exact on-screen label/sentence.

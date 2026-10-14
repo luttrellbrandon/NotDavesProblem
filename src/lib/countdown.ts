@@ -1,4 +1,9 @@
-import { FUN_MEASURE_IDS, type FunMeasureId } from '#lib/fun-measures';
+import {
+	FUN_MEASURE_IDS,
+	getFunMeasureCountdownUnit,
+	isFunMeasureId,
+	type FunMeasureId
+} from '#lib/fun-measures';
 
 export type CountdownViewId = 'full' | 'days' | 'hours' | 'minutes' | 'seconds' | 'weeks';
 
@@ -112,4 +117,13 @@ export function getViewLabel(view: CountdownViewId): string {
 		case 'weeks':
 			return 'weeks';
 	}
+}
+
+/** Countdown Unit for Number Facts (Full Clock → days; Fun Measures → fixed gag phrase). */
+export function getCountdownUnit(view: HeroViewId): string {
+	if (isFunMeasureId(view)) {
+		return getFunMeasureCountdownUnit(view);
+	}
+	if (view === 'full') return 'days';
+	return getViewLabel(view);
 }

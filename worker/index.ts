@@ -1,7 +1,7 @@
 /**
  * Cloudflare Worker: serves /api/fact by fetching a random Useless Fact,
- * rewriting it with Workers AI into a retirement joke that includes n,
- * otherwise static assets.
+ * rewriting it with Workers AI into a retirement joke that includes n and
+ * its Countdown Unit, otherwise static assets.
  */
 
 export interface Env {
@@ -14,6 +14,8 @@ const MODEL = '@cf/meta/llama-3.2-3b-instruct';
 
 const USELESS_FACTS_URL =
 	'https://uselessfacts.jsph.pl/api/v2/facts/random?language=en';
+
+const UNIT_MAX_LEN = 80;
 
 type FactPayload = {
 	fact: string | null;
@@ -53,13 +55,23 @@ function isSiteBrowserRequest(request: Request): boolean {
 	return false;
 }
 
-function buildPrompt(n: number, sourceFact: string): string {
+function parseUnit(raw: string | null): string | null {
+	if (raw === null) return null;
+	const unit = raw.trim();
+	if (!unit || unit.length > UNIT_MAX_LEN) return null;
+	if (/[\u0000-\u001f\u007f]/.test(unit)) return null;
+	return unit;
+}
+
+function buildPrompt(n: number, unit: string, sourceFact: string): string {
 	return [
 		`Countdown number: ${n}`,
+		`Countdown unit: ${unit}`,
 		`Source trivia (true, do not invent new claims): ${sourceFact}`,
 		'',
-		'Write ONE short retirement joke (1–2 sentences) that weaves in BOTH:',
-		`- the countdown number ${n} (digits must appear), and`,
+		'Write ONE short retirement joke (1–2 sentences) that weaves in ALL of:',
+		`- the countdown number ${n} (digits must appear),`,
+		`- the countdown unit "${unit}" (that wording must appear), and`,
 		'- the idea from the source trivia above.',
 		'Light retirement / countdown vibe for a coworker named Dave.',
 		'Do not invent new factual claims beyond the source trivia.',
@@ -68,7 +80,7 @@ function buildPrompt(n: number, sourceFact: string): string {
 	].join('\n');
 }
 
-function extractJoke(raw: string, n: number): string | null {
+function extractJoke(raw: string, n: number, unit: string): string | null {
 	let text = raw.trim();
 	if (!text) return null;
 
@@ -81,7 +93,7 @@ function extractJoke(raw: string, n: number): string | null {
 		try {
 			const parsed = JSON.parse(text.slice(start, end + 1)) as { fact?: unknown };
 			if (typeof parsed.fact === 'string') {
-				return sanitizeJoke(parsed.fact, n);
+				return sanitizeJoke(parsed.fact, n, unit);
 			}
 		} catch {
 			// fall through
@@ -93,10 +105,10 @@ function extractJoke(raw: string, n: number): string | null {
 		.map((l) => l.trim())
 		.find((l) => l && !/^none$/i.test(l));
 	if (!line) return null;
-	return sanitizeJoke(line, n);
+	return sanitizeJoke(line, n, unit);
 }
 
-function sanitizeJoke(fact: string, n: number): string | null {
+function sanitizeJoke(fact: string, n: number, unit: string): string | null {
 	const cleaned = fact
 		.replace(/^["']|["']$/g, '')
 		.replace(/^\s*(fact|joke)\s*:\s*/i, '')
@@ -105,6 +117,8 @@ function sanitizeJoke(fact: string, n: number): string | null {
 	if (/^(null|none|n\/a|unknown|i don't know|i do not know)/i.test(cleaned)) return null;
 	// Must include the countdown digits so the number is woven in.
 	if (!cleaned.includes(String(n))) return null;
+	// Countdown Unit must appear (case-insensitive).
+	if (!cleaned.toLowerCase().includes(unit.toLowerCase())) return null;
 	return cleaned;
 }
 
@@ -119,15 +133,20 @@ async function fetchUselessFact(): Promise<string | null> {
 	return text.length > 0 ? text : null;
 }
 
-async function rewriteWithAi(env: Env, n: number, sourceFact: string): Promise<string | null> {
+async function rewriteWithAi(
+	env: Env,
+	n: number,
+	unit: string,
+	sourceFact: string
+): Promise<string | null> {
 	const result = await env.AI.run(MODEL, {
 		messages: [
 			{
 				role: 'system',
 				content:
-					'You rewrite true trivia into short, clean retirement countdown jokes. Never invent new factual claims. Always include the given countdown number.'
+					'You rewrite true trivia into short, clean retirement countdown jokes. Never invent new factual claims. Always include the given countdown number and countdown unit wording.'
 			},
-			{ role: 'user', content: buildPrompt(n, sourceFact) }
+			{ role: 'user', content: buildPrompt(n, unit, sourceFact) }
 		],
 		max_tokens: 160,
 		temperature: 0.7
@@ -140,7 +159,7 @@ async function rewriteWithAi(env: Env, n: number, sourceFact: string): Promise<s
 				? String((result as { response: unknown }).response)
 				: JSON.stringify(result);
 
-	return extractJoke(text, n);
+	return extractJoke(text, n, unit);
 }
 
 async function handleFact(request: Request, env: Env): Promise<Response> {
@@ -157,9 +176,13 @@ async function handleFact(request: Request, env: Env): Promise<Response> {
 	const url = new URL(request.url);
 	const nRaw = url.searchParams.get('n');
 	const n = nRaw === null ? NaN : Number(nRaw);
+	const unit = parseUnit(url.searchParams.get('unit'));
 
 	if (!Number.isInteger(n) || n < 0 || n > 1_000_000_000) {
 		return json({ error: 'invalid_n' }, 400);
+	}
+	if (!unit) {
+		return json({ error: 'invalid_unit' }, 400);
 	}
 
 	try {
@@ -168,7 +191,7 @@ async function handleFact(request: Request, env: Env): Promise<Response> {
 			return json({ fact: null, tone: 'normal' } satisfies FactPayload);
 		}
 
-		const fact = await rewriteWithAi(env, n, sourceFact);
+		const fact = await rewriteWithAi(env, n, unit, sourceFact);
 		return json({ fact, tone: 'normal' } satisfies FactPayload);
 	} catch (err) {
 		console.error('Useless Facts + AI rewrite failed', err);

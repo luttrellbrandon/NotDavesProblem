@@ -24,6 +24,28 @@ export const FUN_MEASURE_IDS = [
 
 export type FunMeasureId = (typeof FUN_MEASURE_IDS)[number];
 
+/** Fixed short gag Countdown Unit per Fun Measure (prompt + cache + must-include check). */
+export const FUN_MEASURE_COUNTDOWN_UNITS: Record<FunMeasureId, string> = {
+	'martian-sols': 'Martian days',
+	'moon-cycles': 'lunar cycles',
+	'earth-rotations': 'spins',
+	'solar-orbits': 'trips around the Sun',
+	'jupiter-years': 'Jupiter years',
+	'light-seconds': 'light-seconds',
+	'galactic-years': 'galactic years',
+	'pluto-days': 'Pluto days',
+	'atomic-ticks': 'cesium oscillations',
+	'klingon-cycles': 'Klingon battle cycles',
+	stardate: 'stardate',
+	'minecraft-days': 'Minecraft days',
+	'tatooine-sunsets': 'sunsets',
+	'coffee-refills': 'cups of coffee',
+	'remaining-mondays': 'Mondays',
+	meetings: 'meetings',
+	'teams-notifications': 'interruptions',
+	'cares-left': 'cares'
+};
+
 export type FunMeasurePresentation = {
 	id: FunMeasureId;
 	/** Large headline value (already formatted). */
@@ -33,6 +55,10 @@ export type FunMeasurePresentation = {
 	/** Whole integer for Number Fact fetch/cache. */
 	factInteger: number;
 };
+
+export function getFunMeasureCountdownUnit(id: FunMeasureId): string {
+	return FUN_MEASURE_COUNTDOWN_UNITS[id];
+}
 
 /** Cap for trivia API — huge Fun Measure values use a scaled whole number. */
 const FACT_INT_MAX = 1_000_000_000;
