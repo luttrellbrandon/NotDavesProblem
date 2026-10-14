@@ -3,8 +3,8 @@ export type CachedNumberFact = {
 	tone: 'normal' | 'snarky';
 };
 
-/** Bump when cache semantics change (e.g. stop persisting nulls). */
-const PREFIX = 'ndp:fact:v2:';
+/** Bump when cache semantics change (invalidate old math-heavy facts). */
+const PREFIX = 'ndp:fact:v3:';
 
 function keyFor(n: number): string {
 	return `${PREFIX}${n}`;

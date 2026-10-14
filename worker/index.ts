@@ -1,6 +1,6 @@
 /**
  * Cloudflare Worker: serves /api/fact via Workers AI, otherwise static assets.
- * Free-plan friendly: small model, fail closed, client caches successes in localStorage.
+ * Free-plan friendly: cultural trivia, fail closed, client caches successes.
  */
 
 export interface Env {
@@ -35,27 +35,53 @@ function pickTone(): Tone {
 function buildPrompt(n: number, tone: Tone): string {
 	const toneRule =
 		tone === 'snarky'
-			? 'Write one witty/snarky sentence that is still literally true.'
-			: 'Write one plain, clear trivia sentence.';
+			? 'Tone: witty or snarky, but every claim must still be literally true.'
+			: 'Tone: plain, clear, and interesting.';
 
 	return [
-		`State one well-known true fact about the integer ${n}.`,
+		`Give ONE short, well-known trivia fact about the integer ${n}.`,
 		toneRule,
-		'Prefer simple math properties (prime, square, factorial, factors) or famous cultural uses of that number.',
-		'If you truly do not know a verified fact, reply with exactly: NONE',
-		'Otherwise reply with ONLY the fact sentence — no JSON, no quotes, no preamble.'
+		'Content rules:',
+		'- Prefer history, culture, sports, science, geography, technology, or famous named uses of this number.',
+		'- Examples of good directions: a famous year, jersey number, atomic number, highway, constellation, product, event — only if truly associated with this number.',
+		'- Do NOT say it is prime, composite, even, odd, square, triangular, factorial, or list factors/divisibility.',
+		'- Do NOT invent or guess. If you do not know a verified non-math trivia fact, reply with exactly: NONE',
+		'- One or two sentences max. No JSON, no quotes, no preamble — only the fact sentence or NONE.'
 	].join('\n');
+}
+
+/** Reject bare math-classification trivia. */
+function isDullMathFact(fact: string): boolean {
+	const f = fact.toLowerCase();
+	const dullPatterns = [
+		/\bprime number\b/,
+		/\bis prime\b/,
+		/\bcomposite number\b/,
+		/\bis composite\b/,
+		/\bperfect square\b/,
+		/\bsquare number\b/,
+		/\btriangular number\b/,
+		/\bfactorial\b/,
+		/\bdivisible by\b/,
+		/\bdivisor(s)?\b/,
+		/\bfactor(s)?\b/,
+		/\beven number\b/,
+		/\bodd number\b/,
+		/\badditive identity\b/,
+		/\bmultiplicative identity\b/,
+		/\bequals \d+\s*[×x*]\s*\d+/,
+		/\bis \d+\s*[×x*]\s*\d+/
+	];
+	return dullPatterns.some((re) => re.test(f));
 }
 
 function extractFact(raw: string): string | null {
 	let text = raw.trim();
 	if (!text) return null;
 
-	// Strip common wrappers from small models.
 	text = text.replace(/^```(?:json|text)?\s*/i, '').replace(/\s*```$/i, '').trim();
 	if (/^none$/i.test(text) || /^null$/i.test(text)) return null;
 
-	// Prefer JSON if the model still returns it.
 	const start = text.indexOf('{');
 	const end = text.lastIndexOf('}');
 	if (start !== -1 && end > start) {
@@ -68,11 +94,10 @@ function extractFact(raw: string): string | null {
 				return sanitizeFact(fact);
 			}
 		} catch {
-			// fall through to plain text
+			// fall through
 		}
 	}
 
-	// Plain sentence response.
 	const line = text
 		.split('\n')
 		.map((l) => l.trim())
@@ -88,63 +113,13 @@ function sanitizeFact(fact: string): string | null {
 		.trim();
 	if (!cleaned || cleaned.length < 8 || cleaned.length > 280) return null;
 	if (/^(null|none|n\/a|unknown|i don't know|i do not know)/i.test(cleaned)) return null;
+	if (isDullMathFact(cleaned)) return null;
 	return cleaned;
-}
-
-/** Accurate deterministic fallbacks when the model abstains. */
-function mathFallback(n: number, tone: Tone): string | null {
-	if (n === 0) {
-		return tone === 'snarky'
-			? 'Zero: the amount of overtime Dave still wants.'
-			: '0 is the additive identity: adding it changes nothing.';
-	}
-	if (n === 1) {
-		return tone === 'snarky'
-			? '1 is the loneliest number — and also the multiplicative identity.'
-			: '1 is the multiplicative identity: any number times 1 is itself.';
-	}
-
-	const isPrime = (x: number): boolean => {
-		if (x < 2) return false;
-		if (x % 2 === 0) return x === 2;
-		for (let i = 3; i * i <= x; i += 2) {
-			if (x % i === 0) return false;
-		}
-		return true;
-	};
-
-	const root = Math.sqrt(n);
-	if (Number.isInteger(root)) {
-		return tone === 'snarky'
-			? `${n} is ${root}² — a perfect square, unlike most meetings.`
-			: `${n} is a perfect square (${root} × ${root}).`;
-	}
-
-	if (isPrime(n)) {
-		return tone === 'snarky'
-			? `${n} is prime: indivisible, unlike the group chat.`
-			: `${n} is a prime number: it has no positive divisors other than 1 and itself.`;
-	}
-
-	// Small factor pair for composites under a sane bound.
-	if (n >= 2 && n <= 10_000) {
-		for (let i = 2; i * i <= n; i++) {
-			if (n % i === 0) {
-				const other = n / i;
-				return tone === 'snarky'
-					? `${n} = ${i} × ${other}. At least the math has factors that make sense.`
-					: `${n} equals ${i} × ${other}.`;
-			}
-		}
-	}
-
-	return null;
 }
 
 /**
  * Block casual off-site callers (curl, other websites).
- * Browsers sending same-origin fetches include Sec-Fetch-Site: same-origin.
- * This is abuse reduction, not cryptographic auth — headers can be spoofed.
+ * Abuse reduction, not cryptographic auth — headers can be spoofed.
  */
 function isSiteBrowserRequest(request: Request): boolean {
 	const url = new URL(request.url);
@@ -180,7 +155,6 @@ async function handleFact(request: Request, env: Env): Promise<Response> {
 	const nRaw = url.searchParams.get('n');
 	const n = nRaw === null ? NaN : Number(nRaw);
 
-	// Keep n in a useful trivia range (blocks MAX_SAFE_INTEGER spam from huge Fun Measures).
 	if (!Number.isInteger(n) || n < 0 || n > 1_000_000_000) {
 		return json({ error: 'invalid_n' }, 400);
 	}
@@ -193,12 +167,13 @@ async function handleFact(request: Request, env: Env): Promise<Response> {
 			messages: [
 				{
 					role: 'system',
-					content: 'You are a concise trivia assistant. Prefer true, well-known facts. Never invent.'
+					content:
+						'You are a trivia assistant for interesting real-world facts about numbers. Never invent. Never answer with only math classifications (prime, factors, even/odd, squares).'
 				},
 				{ role: 'user', content: prompt }
 			],
-			max_tokens: 120,
-			temperature: 0.35
+			max_tokens: 140,
+			temperature: 0.4
 		});
 
 		const text =
@@ -208,13 +183,13 @@ async function handleFact(request: Request, env: Env): Promise<Response> {
 					? String((result as { response: unknown }).response)
 					: JSON.stringify(result);
 
-		const fromModel = extractFact(text);
-		const fact = fromModel ?? mathFallback(n, tone);
+		const fact = extractFact(text);
 		return json({ fact, tone } satisfies FactPayload);
 	} catch (err) {
 		console.error('Workers AI fact failed', err);
-		const fact = mathFallback(n, tone);
-		return json({ fact, tone, error: fact ? undefined : 'ai_unavailable' });
+		return json({ fact: null, tone, error: 'ai_unavailable' } satisfies FactPayload & {
+			error: string;
+		});
 	}
 }
 
