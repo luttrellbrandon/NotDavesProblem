@@ -30,7 +30,16 @@ export type FunMeasurePresentation = {
 	primary: string;
 	/** Funny sentence with live values filled in. */
 	sentence: string;
+	/** Whole integer for Number Fact fetch/cache. */
+	factInteger: number;
 };
+
+function factInt(value: number): number {
+	if (!Number.isFinite(value)) return 0;
+	const abs = Math.abs(value);
+	if (abs < 1) return 0;
+	return Math.min(Math.floor(abs), Number.MAX_SAFE_INTEGER);
+}
 
 const MS_SECOND = 1000;
 const MS_DAY = 86_400_000;
@@ -54,8 +63,8 @@ const C_KM_PER_S = 299_792.458;
 /** Minecraft day length. */
 const MINECRAFT_DAY_MS = 20 * 60 * 1000;
 /**
- * Invented Klingon “battle cycle” length so the joke tracks remaining time.
- * (~1.66 Earth days → ~47 cycles near ~78 Earth days.)
+ * Invented Klingon "battle cycle" length so the joke tracks remaining time.
+ * (~1.66 Earth days -> ~47 cycles near ~78 Earth days.)
  */
 const KLINGON_BATTLE_CYCLE_MS = 1.66 * MS_DAY;
 /** Gag rates (workplace). */
@@ -128,7 +137,8 @@ export function getFunMeasure(
 			return {
 				id,
 				primary: formatDecimal(sols, 1),
-				sentence: `Dave retires in ${formatDecimal(sols, 1)} Martian days`
+				sentence: `Dave retires in ${formatDecimal(sols, 1)} Martian days`,
+				factInteger: factInt(sols)
 			};
 		}
 		case 'moon-cycles': {
@@ -136,7 +146,8 @@ export function getFunMeasure(
 			return {
 				id,
 				primary: formatDecimal(cycles, 1),
-				sentence: `Only ${formatDecimal(cycles, 1)} full lunar cycles until freedom`
+				sentence: `Only ${formatDecimal(cycles, 1)} full lunar cycles until freedom`,
+				factInteger: factInt(cycles)
 			};
 		}
 		case 'earth-rotations': {
@@ -144,14 +155,16 @@ export function getFunMeasure(
 			return {
 				id,
 				primary: formatInt(spins),
-				sentence: `${formatInt(spins)} more spins of this stupid planet`
+				sentence: `${formatInt(spins)} more spins of this stupid planet`,
+				factInteger: factInt(spins)
 			};
 		}
 		case 'solar-orbits': {
 			return {
 				id,
 				primary: formatDecimal(years, 3),
-				sentence: `${formatDecimal(years, 3)} trips around the Sun remaining`
+				sentence: `${formatDecimal(years, 3)} trips around the Sun remaining`,
+				factInteger: factInt(years)
 			};
 		}
 		case 'jupiter-years': {
@@ -159,7 +172,8 @@ export function getFunMeasure(
 			return {
 				id,
 				primary: formatDecimal(jYears, 4),
-				sentence: `${formatDecimal(jYears, 4)} Jupiter years until escape`
+				sentence: `${formatDecimal(jYears, 4)} Jupiter years until escape`,
+				factInteger: factInt(jYears)
 			};
 		}
 		case 'light-seconds': {
@@ -168,7 +182,8 @@ export function getFunMeasure(
 			return {
 				id,
 				primary: formatInt(lightSeconds),
-				sentence: `Light could travel ${formatDistanceKm(km)} before Dave retires`
+				sentence: `Light could travel ${formatDistanceKm(km)} before Dave retires`,
+				factInteger: factInt(lightSeconds)
 			};
 		}
 		case 'galactic-years': {
@@ -176,7 +191,8 @@ export function getFunMeasure(
 			return {
 				id,
 				primary: formatScientific(gYears, 2),
-				sentence: `${formatScientific(gYears, 2)} galactic years remaining`
+				sentence: `${formatScientific(gYears, 2)} galactic years remaining`,
+				factInteger: factInt(gYears)
 			};
 		}
 		case 'pluto-days': {
@@ -184,7 +200,8 @@ export function getFunMeasure(
 			return {
 				id,
 				primary: formatDecimal(plutoDays, 1),
-				sentence: `Only ${formatDecimal(plutoDays, 1)} Pluto days until freedom`
+				sentence: `Only ${formatDecimal(plutoDays, 1)} Pluto days until freedom`,
+				factInteger: factInt(plutoDays)
 			};
 		}
 		case 'atomic-ticks': {
@@ -192,7 +209,8 @@ export function getFunMeasure(
 			return {
 				id,
 				primary: formatScientific(ticks, 1),
-				sentence: `Approximately ${formatScientific(ticks, 1)} cesium oscillations to go`
+				sentence: `Approximately ${formatScientific(ticks, 1)} cesium oscillations to go`,
+				factInteger: factInt(ticks)
 			};
 		}
 		case 'klingon-cycles': {
@@ -200,15 +218,16 @@ export function getFunMeasure(
 			return {
 				id,
 				primary: formatInt(cycles),
-				sentence: `${formatInt(cycles)} Klingon battle cycles until honorable discharge`
+				sentence: `${formatInt(cycles)} Klingon battle cycles until honorable discharge`,
+				factInteger: factInt(cycles)
 			};
 		}
 		case 'stardate': {
-			// Special-cased gag — not a live conversion.
 			return {
 				id,
 				primary: '404',
-				sentence: 'Stardate 404: Employment Not Found'
+				sentence: 'Stardate 404: Employment Not Found',
+				factInteger: 404
 			};
 		}
 		case 'minecraft-days': {
@@ -216,7 +235,8 @@ export function getFunMeasure(
 			return {
 				id,
 				primary: formatInt(mcDays),
-				sentence: `${formatInt(mcDays)} Minecraft days until retirement`
+				sentence: `${formatInt(mcDays)} Minecraft days until retirement`,
+				factInteger: factInt(mcDays)
 			};
 		}
 		case 'tatooine-sunsets': {
@@ -224,7 +244,8 @@ export function getFunMeasure(
 			return {
 				id,
 				primary: formatInt(sunsets),
-				sentence: `${formatInt(sunsets)} sunsets until Dave escapes the Empire`
+				sentence: `${formatInt(sunsets)} sunsets until Dave escapes the Empire`,
+				factInteger: factInt(sunsets)
 			};
 		}
 		case 'coffee-refills': {
@@ -232,7 +253,8 @@ export function getFunMeasure(
 			return {
 				id,
 				primary: formatInt(cups),
-				sentence: `Only ${formatInt(cups)} cups of coffee until freedom`
+				sentence: `Only ${formatInt(cups)} cups of coffee until freedom`,
+				factInteger: factInt(cups)
 			};
 		}
 		case 'remaining-mondays': {
@@ -240,7 +262,8 @@ export function getFunMeasure(
 			return {
 				id,
 				primary: formatInt(mondays),
-				sentence: `Just ${formatInt(mondays)} more Mondays to survive`
+				sentence: `Just ${formatInt(mondays)} more Mondays to survive`,
+				factInteger: factInt(mondays)
 			};
 		}
 		case 'meetings': {
@@ -248,7 +271,8 @@ export function getFunMeasure(
 			return {
 				id,
 				primary: formatInt(meetings),
-				sentence: `${formatInt(meetings)} pointless meetings remaining`
+				sentence: `${formatInt(meetings)} pointless meetings remaining`,
+				factInteger: factInt(meetings)
 			};
 		}
 		case 'teams-notifications': {
@@ -256,17 +280,18 @@ export function getFunMeasure(
 			return {
 				id,
 				primary: formatInt(pings),
-				sentence: `Approximately ${formatInt(pings)} interruptions remaining`
+				sentence: `Approximately ${formatInt(pings)} interruptions remaining`,
+				factInteger: factInt(pings)
 			};
 		}
 		case 'cares-left': {
-			// Special-cased declining gag (softened copy).
 			const cares = Math.max(1e-10, diffMs / 1e20);
 			const primary = cares.toExponential(1);
 			return {
 				id,
 				primary,
-				sentence: `${primary} cares left to give — and declining`
+				sentence: `${primary} cares left to give — and declining`,
+				factInteger: factInt(cares)
 			};
 		}
 	}

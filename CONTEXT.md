@@ -30,11 +30,11 @@ _Avoid_: easter egg, joke unit, novelty metric
 
 
 **Primary Number**:
-The single integer that represents the current Countdown View for Number Facts. For Full Clock and the Days view, that integer is remaining whole days; for other views it is the matching total (hours, minutes, seconds, or weeks).
+The whole integer used for Number Facts and fact caching for the current Countdown View. For Full Clock and Days it is remaining whole days; for other real totals it is that total; for Fun Measures it is the floored/rounded whole value of the headline number.
 _Avoid_: display value, headline count
 
 **Number Fact**:
-A trivia fact from the Numbers API about the Primary Number of the current Countdown View.
+A short, accurate trivia statement about the Primary Number (or Fun Measure headline value) of the current Countdown View, produced by Workers AI in either a normal or snarky tone.
 _Avoid_: trivia blurb, fun fact, API text
 
 **Retired State**:

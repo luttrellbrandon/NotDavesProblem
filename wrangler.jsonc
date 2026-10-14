@@ -2,7 +2,13 @@
 	"$schema": "node_modules/wrangler/config-schema.json",
 	"name": "notdavesproblem",
 	"compatibility_date": "2026-10-14",
+	"main": "worker/index.ts",
 	"assets": {
-		"directory": "./build"
+		"directory": "./build",
+		"binding": "ASSETS",
+		"run_worker_first": ["/api/*"]
+	},
+	"ai": {
+		"binding": "AI"
 	}
 }

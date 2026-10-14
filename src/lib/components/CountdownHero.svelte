@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import { fade } from 'svelte/transition';
 	import { MediaQuery } from 'svelte/reactivity';
 	import {
@@ -6,9 +7,11 @@
 		getPrimaryNumber,
 		getRemaining,
 		getViewLabel,
+		type CountdownViewId,
 		type HeroViewId
 	} from '#lib/countdown';
 	import { getFunMeasure, isFunMeasureId } from '#lib/fun-measures';
+	import { loadNumberFact, type NumberFactResult } from '#lib/number-fact';
 	import { BRAND_NAME, RETIREE_NAME, RETIREMENT_INSTANT_MS } from '#lib/retirement';
 	import RetiredState from './RetiredState.svelte';
 
@@ -17,9 +20,13 @@
 
 	const prefersReducedMotion = new MediaQuery('(prefers-reduced-motion: reduce)');
 	const fadeMs = $derived(prefersReducedMotion.current ? 0 : 450);
+	const factFadeMs = $derived(prefersReducedMotion.current ? 0 : 350);
 
 	let nowMs = $state(Date.now());
 	let viewIndex = $state(0);
+	let numberFactPromise = $state<Promise<NumberFactResult>>(
+		Promise.resolve({ fact: null, tone: 'normal' })
+	);
 
 	const remaining = $derived(getRemaining(nowMs, RETIREMENT_INSTANT_MS));
 	const isRetired = $derived(remaining.isRetired);
@@ -55,6 +62,21 @@
 		}, VIEW_DWELL_MS);
 
 		return () => clearInterval(id);
+	});
+
+	// Snapshot Primary Number when Countdown View changes (not every clock tick).
+	$effect(() => {
+		if (isRetired) return;
+
+		const view = currentView;
+		const n = untrack(() => {
+			if (isFunMeasureId(view)) {
+				return getFunMeasure(view, remaining, nowMs, RETIREMENT_INSTANT_MS).factInteger;
+			}
+			return getPrimaryNumber(view as CountdownViewId, remaining);
+		});
+
+		numberFactPromise = loadNumberFact(n);
 	});
 
 	function pad(value: number): string {
@@ -146,10 +168,26 @@
 				{/key}
 			</div>
 
-			<div class="fact-slot min-h-[3rem] max-w-xl">
-				<p class="fact text-sm italic text-base-content/50 sm:text-base">
-					Number facts coming soon
-				</p>
+			<div class="fact-slot min-h-[3rem] max-w-xl" aria-live="polite">
+				{#key currentView}
+					{#await numberFactPromise}
+						<p
+							class="fact text-sm italic text-base-content/50 sm:text-base"
+							in:fade={{ duration: factFadeMs }}
+						>
+							Looking up a number fact…
+						</p>
+					{:then result}
+						{#if result.fact}
+							<p
+								class="fact text-sm italic leading-relaxed text-base-content/70 sm:text-base"
+								in:fade={{ duration: factFadeMs }}
+							>
+								{result.fact}
+							</p>
+						{/if}
+					{/await}
+				{/key}
 			</div>
 		</section>
 	{/if}

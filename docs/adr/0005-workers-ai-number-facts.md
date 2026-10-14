@@ -1,0 +1,3 @@
+# Number Facts via Workers AI on the same Worker
+
+Number Facts come from Cloudflare Workers AI on the same Worker that serves the static site (not Numbers API, not a separate Worker). The browser calls a same-origin `/api/fact` endpoint; responses are cached in `localStorage` to stay within the Workers Free Neurons budget. The model must return only well-known, verifiable facts; if unsure it returns no fact (fail closed). Tone is chosen at random (normal vs snarky) on first fetch for a number; that result is what `localStorage` caches by integer key with no TTL (until the browser clears storage). This reintroduces live facts after ADR 0003’s deferral and adds a small server runtime beside `adapter-static` assets.
