@@ -2,12 +2,12 @@
 
 A single-page retirement countdown for **David Mangicaro**, hosted at [notdavesproblem.party](https://notdavesproblem.party).
 
-The hero shows remaining time until the **Retirement Instant** (start of January 1, 2027, America/New_York), rotating through countdown views and Fun Measures with fade transitions. **Number Facts** come from [Cloudflare Workers AI](https://developers.cloudflare.com/workers-ai/) (normal or snarky tone), cached in `localStorage` ([ADR 0005](./docs/adr/0005-workers-ai-number-facts.md)). After the Retirement Instant, the site switches to a celebratory retired state.
+The hero shows remaining time until the **Retirement Instant** (start of January 1, 2027, America/New_York), rotating through countdown views and Fun Measures with fade transitions. **Number Facts** come from the [Numbers API](http://numbersapi.com/) (trivia), proxied by a Cloudflare Worker over HTTPS and cached in `localStorage` ([ADR 0006](./docs/adr/0006-numbers-api-worker-proxy.md)). After the Retirement Instant, the site switches to a celebratory retired state.
 
 ## Stack
 
 - [SvelteKit](https://svelte.dev/docs/kit) with `@sveltejs/adapter-static`
-- Cloudflare Worker: static `build/` assets + `/api/fact` (Workers AI)
+- Cloudflare Worker: static `build/` assets + `/api/fact` (Numbers API HTTP proxy)
 - [Tailwind CSS](https://tailwindcss.com/) + [DaisyUI](https://daisyui.com/) **sunset** theme
 
 ## Domain language
@@ -21,7 +21,7 @@ npm install
 npm run dev
 ```
 
-Local `npm run dev` serves the SvelteKit app only (no Workers AI). Fact calls to `/api/fact` need a deployed Worker or `wrangler dev` after a build.
+Local `npm run dev` serves the SvelteKit app only. Fact calls to `/api/fact` need a deployed Worker or:
 
 ```sh
 npm run build
@@ -35,23 +35,20 @@ npm run build
 npm run preview
 ```
 
-## Deploy (Cloudflare Workers Builds)
+## Deploy (Cloudflare Workers Builds) — free
 
-Deploys use **Cloudflare Workers Builds ↔ GitHub** (not GitHub Actions). See [ADR 0004](./docs/adr/0004-cloudflare-pages-github.md) and `wrangler.jsonc`.
+Deploys use **Cloudflare Workers Builds ↔ GitHub**. See [ADR 0004](./docs/adr/0004-cloudflare-pages-github.md) and `wrangler.jsonc`.
 
-### One-time Cloudflare setup (Workers AI) — free plan
+### How Number Facts work (no Workers AI)
 
-Do this **before** (or right after) the first deploy that includes the `AI` binding.
+1. Browser (HTTPS site) calls same-origin **`/api/fact?n=42`**.
+2. Worker fetches **`http://numbersapi.com/42/trivia?json`** (HTTP is fine from the Worker).
+3. Worker returns `{ fact, tone: "normal" }` over HTTPS.
+4. Successful facts are stored in **`localStorage`** so repeat views don’t hit the API.
 
-#### A. Account / Workers AI
+No AI enable step. No Neurons. Stay on **Workers Free**.
 
-1. Log in at [dash.cloudflare.com](https://dash.cloudflare.com/).
-2. Stay on **Workers Free** unless you intentionally upgrade. Free includes **10,000 Neurons/day** for Workers AI ([pricing](https://developers.cloudflare.com/workers-ai/platform/pricing/)).
-3. Open **AI** → **Workers AI** in the sidebar (or search “Workers AI”).
-4. If Cloudflare shows a welcome / terms / “Get started” prompt, accept it so AI is enabled for the account.
-5. You do **not** create a public API token for the website. The site uses a private **`AI` binding** in `wrangler.jsonc` (no key in the browser).
-
-#### B. Build settings (avoid broken builds)
+### Build settings
 
 On **Workers & Pages** → **`notdavesproblem`** → **Settings** → **Build**:
 
@@ -66,22 +63,13 @@ On **Workers & Pages** → **`notdavesproblem`** → **Settings** → **Build**:
 | --- | --- |
 | `NODE_VERSION` | `22` |
 
-Do **not** use `wrangler types --check` in the build command. Do **not** point Deploy at a different project name than `notdavesproblem` in `wrangler.jsonc`.
+Do **not** use `wrangler types --check` in the build command. `wrangler.jsonc` must name the Worker `notdavesproblem` and must **not** require an `AI` binding for facts.
 
-#### C. Deploy the AI-enabled code
+### Verify
 
-1. Push `main` with `wrangler.jsonc` (`ai.binding`, `main`, `assets`) and `worker/index.ts`.
-2. Wait for the Git-connected build + deploy to go green.
-3. If deploy fails mentioning AI / binding permissions, return to **AI → Workers AI**, finish any enable prompts, and **Retry deploy**.
-
-#### D. Verify (site OK, outsiders blocked)
-
-1. Open the live site (custom domain or `*.workers.dev`) **in a browser**. Wait for a Countdown View — a fact may appear, or stay blank if the model fail-closes.
-2. From a terminal, `curl "https://YOUR_HOST/api/fact?n=42"` should return **403** (blocked). That is intentional.
-3. DevTools → Network on the site should show `/api/fact` returning **200** JSON from the same origin.
-
-`/api/fact` only accepts same-origin browser requests (`Sec-Fetch-Site` / matching `Origin`). There are **no CORS allow headers**, so other websites cannot read the response in a browser. Determined callers can still spoof headers; `localStorage` caching keeps Neuron use low for real visitors.
-
+1. Push `main` and wait for a green deploy.
+2. Open the site in a browser — facts should appear under the countdown when Numbers API has trivia for that integer.
+3. `curl "https://YOUR_HOST/api/fact?n=42"` should return **403** (same-origin gating). DevTools on the site should show **200** for `/api/fact`.
 
 ### Branches
 

@@ -30,7 +30,7 @@ export async function loadNumberFact(n: number): Promise<NumberFactResult> {
 		const data = (await res.json()) as { fact?: string | null; tone?: string };
 		const entry: NumberFactResult = {
 			fact: typeof data.fact === 'string' ? data.fact : null,
-			tone: data.tone === 'snarky' ? 'snarky' : 'normal'
+			tone: 'normal'
 		};
 		if (entry.fact) writeFactCache(n, entry);
 		return entry;

@@ -1,3 +1,5 @@
 # Number Facts via Workers AI on the same Worker
 
-Number Facts come from Cloudflare Workers AI on the same Worker that serves the static site (not Numbers API, not a separate Worker). The browser calls a same-origin `/api/fact` endpoint. Successful facts are cached in `localStorage` by integer key (no TTL) to stay within the Workers Free Neurons budget; null results are not cached so a later view can retry. Tone is chosen at random (normal vs snarky) when a fact is produced. Facts should be cultural, historical, or scientific trivia about the number—not bare math classifications (prime/composite/factors). Dull math-only model replies are rejected. If the model is unsure or only returns math classification, return no fact (fail closed); there is no deterministic math fallback.
+**Status:** superseded by [ADR 0006](./0006-numbers-api-worker-proxy.md)
+
+Number Facts briefly used Cloudflare Workers AI on the same Worker. That approach is replaced by a Numbers API proxy for more reliable curated trivia without Neurons usage.
