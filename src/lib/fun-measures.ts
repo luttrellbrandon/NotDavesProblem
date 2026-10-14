@@ -34,11 +34,18 @@ export type FunMeasurePresentation = {
 	factInteger: number;
 };
 
+/** Cap for trivia API — huge Fun Measure values use a scaled whole number. */
+const FACT_INT_MAX = 1_000_000_000;
+
 function factInt(value: number): number {
 	if (!Number.isFinite(value)) return 0;
 	const abs = Math.abs(value);
 	if (abs < 1) return 0;
-	return Math.min(Math.floor(abs), Number.MAX_SAFE_INTEGER);
+	if (abs <= FACT_INT_MAX) return Math.floor(abs);
+	// e.g. cesium ticks → use scientific coefficient as a small trivia seed
+	const exp = Math.floor(Math.log10(abs));
+	const coeff = abs / 10 ** exp;
+	return Math.max(1, Math.min(FACT_INT_MAX, Math.floor(coeff * 10 + exp)));
 }
 
 const MS_SECOND = 1000;
@@ -155,7 +162,7 @@ export function getFunMeasure(
 			return {
 				id,
 				primary: formatInt(spins),
-				sentence: `${formatInt(spins)} more spins of this stupid planet`,
+				sentence: `${formatInt(spins)} more spins of this planet`,
 				factInteger: factInt(spins)
 			};
 		}
