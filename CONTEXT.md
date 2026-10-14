@@ -24,6 +24,10 @@ _Avoid_: mode, screen, slide, unit panel
 The Countdown View that shows remaining days, hours, minutes, and seconds together.
 _Avoid_: detailed countdown, DHMS view
 
+**Header Clock**:
+A compact Full Clock countdown fixed in the top-left that appears after the opening Full Clock Countdown View has been shown, then keeps ticking through later Countdown Views; it is hidden in the Retired State.
+_Avoid_: mini clock, corner clock, sticky countdown
+
 **Fun Measure**:
 A Countdown View that expresses remaining time in a humorous or alternate unit (astronomical, sci‑fi, or workplace gag), shown as a large primary value plus a funny sentence. Most use live unit math from the Retirement Instant; a few are special-cased gags that are not straight conversions.
 _Avoid_: easter egg, joke unit, novelty metric

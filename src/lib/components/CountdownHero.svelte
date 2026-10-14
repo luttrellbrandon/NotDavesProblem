@@ -15,8 +15,12 @@
 	import { BRAND_NAME, RETIREE_NAME, RETIREMENT_INSTANT_MS } from '#lib/retirement';
 	import RetiredState from './RetiredState.svelte';
 
-	const VIEW_DWELL_MS = 6000;
+	const VIEW_DWELL_MS = 17000;
 	const TICK_MS = 1000;
+
+	function pad(value: number): string {
+		return String(value).padStart(2, '0');
+	}
 
 	const prefersReducedMotion = new MediaQuery('(prefers-reduced-motion: reduce)');
 	const fadeMs = $derived(prefersReducedMotion.current ? 0 : 450);
@@ -24,6 +28,7 @@
 
 	let nowMs = $state(Date.now());
 	let viewIndex = $state(0);
+	let headerClockUnlocked = $state(false);
 	let numberFactPromise = $state<Promise<NumberFactResult>>(
 		Promise.resolve({ fact: null, tone: 'normal' })
 	);
@@ -43,6 +48,13 @@
 		if (isFunMeasureId(currentView)) return '';
 		return getViewLabel(currentView);
 	});
+	const headerClockText = $derived(
+		`${remaining.days}d ${pad(remaining.hours)}h ${pad(remaining.minutes)}m ${pad(remaining.seconds)}s`
+	);
+	const headerClockAriaLabel = $derived(
+		`${remaining.days} days, ${remaining.hours} hours, ${remaining.minutes} minutes, and ${remaining.seconds} seconds remaining`
+	);
+	const showHeaderClock = $derived(headerClockUnlocked && !isRetired);
 
 	// Clock tick — intentional $effect + setInterval (cleanup on destroy).
 	$effect(() => {
@@ -54,10 +66,14 @@
 	});
 
 	// View rotation dwell — same pattern; skipped once retired.
+	// Unlock Header Clock the first time we leave the opening Full Clock.
 	$effect(() => {
 		if (isRetired) return;
 
 		const id = setInterval(() => {
+			if (viewIndex === 0) {
+				headerClockUnlocked = true;
+			}
 			viewIndex = (viewIndex + 1) % HERO_VIEWS.length;
 		}, VIEW_DWELL_MS);
 
@@ -78,11 +94,16 @@
 
 		numberFactPromise = loadNumberFact(n);
 	});
-
-	function pad(value: number): string {
-		return String(value).padStart(2, '0');
-	}
 </script>
+
+{#if showHeaderClock}
+	<p
+		class="header-clock fixed top-3 left-3 z-10 text-xs tabular-nums text-base-content/45 sm:top-4 sm:left-4 sm:text-sm"
+		aria-label={headerClockAriaLabel}
+	>
+		{headerClockText}
+	</p>
+{/if}
 
 <main class="hero flex min-h-dvh w-full items-center justify-center px-6 py-8 sm:py-10">
 	{#if isRetired}
